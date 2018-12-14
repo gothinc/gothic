@@ -18,6 +18,10 @@ type GothicConfig struct {
 	viper.Viper
 }
 
+func GetConfig() *GothicConfig{
+	return Config
+}
+
 /**
  * 加配置文件
  */

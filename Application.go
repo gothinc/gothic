@@ -23,11 +23,7 @@ const (
 	defaultConfigType  = ".toml"
 )
 
-var Application *GothicApplication
-
-func init(){
-	Application = NewGothicApplication()
-}
+var Application = NewGothicApplication()
 
 type GothicApplication struct{
 	//全局上下文环境
@@ -81,9 +77,6 @@ func (this *GothicApplication) envInit() {
 
 	//加载配置
 	loadConfig(this.ConfigPath, this.ConfigFile, this.Active)
-
-	//加载日志组件
-	initLogger()
 }
 
 func (this *GothicApplication) parseFlag(){
