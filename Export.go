@@ -12,6 +12,10 @@ import (
 
 var Logger = logger.NewDefaultLogger()
 
+func Format(fields logger.EntryFields) *logger.Entry{
+	return Logger.Format(fields)
+}
+
 func Debug(v ...interface{}) {
 	Logger.Debug(v...)
 }

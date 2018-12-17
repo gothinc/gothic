@@ -113,13 +113,9 @@ func (this *GothicLogger) SetIsJson(isJson bool){
 	this.isJson = isJson
 }
 
-//判断文件或目录是否存在
-func PathExist(path string) bool {
-	_, err := os.Stat(path)
-	if err != nil && os.IsNotExist(err) {
-		return false
-	}
-	return true
+func (this *GothicLogger) Format(fields EntryFields) *Entry{
+	entry := NewEntry(this, fields)
+	return entry
 }
 
 func (this *GothicLogger) Debug(v ...interface{}) {
@@ -168,6 +164,15 @@ func (this *GothicLogger) Error(v ...interface{}) {
 func (this *GothicLogger) Extend(logName string, v ...interface{}) {
 	logName = this.prefix + logName + this.suffix
 	this.writeLog(logName, v...)
+}
+
+//判断文件或目录是否存在
+func PathExist(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func (this *GothicLogger) getLogger(logName string) (*log.Logger, error) {
@@ -243,11 +248,6 @@ func (this *GothicLogger) writeJson(logger *log.Logger, v ...interface{}) {
 	if err != nil{
 		fmt.Sprintln("marshal json exception: ", err.Error())
 	}
-}
-
-func (this *GothicLogger) Formatter(fields EntryFields) *Entry{
-	entry := NewEntry(this, fields)
-	return entry
 }
 
 func CheckLogLevel(level LogLevel) bool{
