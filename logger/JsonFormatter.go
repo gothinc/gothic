@@ -1,8 +1,8 @@
 package logger
 
 import (
-	"fmt"
 	"github.com/json-iterator/go"
+	"time"
 )
 
 /**
@@ -12,15 +12,27 @@ import (
  */
 
 type JsonFormatter struct {
+	TimestampFormat string
 }
 
-func NewJsonFormatter() *JsonFormatter{
-	return &JsonFormatter{}
+func NewJsonFormatter(timestampFormat string) *JsonFormatter{
+	return &JsonFormatter{
+		TimestampFormat: timestampFormat,
+	}
+}
+
+func (this *JsonFormatter) SetTimestampFormat(format string){
+	this.TimestampFormat = format
 }
 
 func (this *JsonFormatter) Format(v ...interface{}) (string, error)  {
-	msg := fmt.Sprint(v)
-	cont, err := jsoniter.MarshalToString(msg)
+	ret := make(map[string]interface{}, 2)
+	if this.TimestampFormat != ""{
+		ret["time"] = time.Now().Format(this.TimestampFormat)
+	}
+	ret["msg"] = v
+
+	cont, err := jsoniter.MarshalToString(ret)
 	if err != nil{
 		return "", err
 	}
@@ -29,6 +41,10 @@ func (this *JsonFormatter) Format(v ...interface{}) (string, error)  {
 }
 
 func (this *JsonFormatter) FormatFields(fields EntryFields) (string, error)  {
+	if this.TimestampFormat != ""{
+		fields["time"] = time.Now().Format(this.TimestampFormat)
+	}
+
 	cont, err := jsoniter.MarshalToString(fields)
 	if err != nil{
 		return "", err

@@ -1,6 +1,8 @@
 package gothic
 
-import "github.com/gothinc/gothic/logger"
+import (
+	"github.com/gothinc/gothic/logger"
+)
 
 /**
  * @desc Export
@@ -10,22 +12,22 @@ import "github.com/gothinc/gothic/logger"
 
 var Logger = logger.NewDefaultLogger()
 
-func Debug(v ...interface{})  {
-	Logger.Debug(v)
+func Debug(v ...interface{}) {
+	Logger.Debug(v...)
 }
 
-func Access(v ...interface{})  {
-	Logger.Access(v)
+func Access(v ...interface{}) {
+	Logger.Access(v...)
 }
 
-func Warn(v ...interface{})  {
-	Logger.Warn(v)
+func Warn(v ...interface{}) {
+	Logger.Warn(v...)
 }
 
-func Error(v ...interface{})  {
-	Logger.Error(v)
+func Error(v ...interface{}) {
+	Logger.Error(v...)
 }
 
-func Extend(logName string, v ...interface{})  {
-	Logger.Extend(logName, v)
+func Extend(logName string, v ...interface{}) {
+	Logger.Extend(logName, v...)
 }

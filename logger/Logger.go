@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"github.com/gothinc/gothic"
 	"log"
 	"os"
 	"sync"
@@ -20,11 +19,11 @@ const (
 )
 
 const(
-	defaultLogRootPath = "./logs"
-	defaultLogPrefix = "gothic-"
-	defaultLogSuffix = ".log"
-	defaultLogLevel = LevelAccess
-	defaultLogTimestampFormat = "2006-01-02 15:04:05"
+	DefaultLogRootPath = "./logs"
+	DefaultLogPrefix = "gothic-"
+	DefaultLogSuffix = ".log"
+	DefaultLogLevel = LevelAccess
+	DefaultLogTimestampFormat = "2006-01-02 15:04:05"
 )
 
 func getLevelName(level LogLevel) string{
@@ -44,93 +43,17 @@ func getLevelName(level LogLevel) string{
 
 func NewDefaultLogger() *GothicLogger{
 	return &GothicLogger{
-		rootPath: defaultLogRootPath,
-		logLevel: defaultLogLevel,
-		prefix: defaultLogPrefix,
-		suffix: defaultLogSuffix,
-		timestampFormat: defaultLogTimestampFormat,
+		rootPath: DefaultLogRootPath,
+		logLevel: DefaultLogLevel,
+		prefix: DefaultLogPrefix,
+		suffix: DefaultLogSuffix,
+		timestampFormat: DefaultLogTimestampFormat,
 		isJson: false,
-		formatter: NewTextFormatter(),
+		disableTime: false,
+		formatter: NewTextFormatter(DefaultLogTimestampFormat),
 		loggerMap: make(map[string]*log.Logger),
 		fdMap: make(map[string]*os.File),
 	}
-}
-
-func NewLogger(rootPath, prefix, suffix, timestampFormat string, logLevel LogLevel, isJson bool) *GothicLogger{
-	logger := &GothicLogger{
-		rootPath: rootPath,
-		logLevel: logLevel,
-		prefix: prefix,
-		suffix: suffix,
-		timestampFormat: timestampFormat,
-		isJson: isJson,
-		loggerMap: make(map[string]*log.Logger),
-		fdMap: make(map[string]*os.File),
-	}
-
-	if isJson{
-		logger.formatter = NewJsonFormatter()
-	}else{
-		logger.formatter = NewTextFormatter()
-	}
-
-	return logger
-}
-
-func NewGothicLogger() *GothicLogger{
-	Config := gothic.GetConfig()
-
-	//get logger config
-	loggerConfig := Config.GetStringMap("log")
-	if loggerConfig == nil || len(loggerConfig) == 0{
-		return NewDefaultLogger()
-	}
-
-	gothicLogger := new(GothicLogger)
-
-	gothicLogger.rootPath = defaultLogRootPath
-	if _, ok := loggerConfig["root"]; ok{
-		gothicLogger.rootPath = Config.GetString("log.root")
-	}
-
-	gothicLogger.prefix = defaultLogPrefix
-	if _, ok := loggerConfig["prefix"]; ok{
-		gothicLogger.prefix = Config.GetString("log.prefix")
-	}
-
-	gothicLogger.suffix = defaultLogSuffix
-	if _, ok := loggerConfig["suffix"]; ok{
-		gothicLogger.suffix = Config.GetString("log.suffix")
-	}
-
-	gothicLogger.logLevel = defaultLogLevel
-	if _, ok := loggerConfig["level"]; ok{
-		gothicLogger.logLevel = LogLevel(Config.GetInt("log.level"))
-		if !CheckLogLevel(gothicLogger.logLevel){
-			panic(fmt.Sprintf("invalid log level, config level: %d", gothicLogger.logLevel))
-		}
-	}
-
-	gothicLogger.timestampFormat = defaultLogTimestampFormat
-	if _, ok := loggerConfig["timestamp_format"]; ok{
-		gothicLogger.timestampFormat = Config.GetString("log.timestamp_format")
-	}
-
-	if _, ok := loggerConfig["disable_time"]; ok{
-		gothicLogger.disableTime = Config.GetBool("log.disable_time")
-	}
-
-	gothicLogger.isJson = Config.GetBool("log.json_format")
-	if gothicLogger.isJson{
-		gothicLogger.formatter = NewJsonFormatter()
-	}else{
-		gothicLogger.formatter = NewTextFormatter()
-	}
-
-	gothicLogger.loggerMap = make(map[string]*log.Logger)
-	gothicLogger.fdMap = make(map[string]*os.File)
-
-	return gothicLogger
 }
 
 //日志类
@@ -149,11 +72,21 @@ type GothicLogger struct {
 }
 
 func (this *GothicLogger) SetTimestampFormat(timestampFormat string){
-	this.timestampFormat = timestampFormat
+	if this.disableTime{
+		this.timestampFormat = ""
+		this.formatter.SetTimestampFormat("")
+	}else{
+		this.timestampFormat = timestampFormat
+		this.formatter.SetTimestampFormat(timestampFormat)
+	}
 }
 
 func (this *GothicLogger) SetDisableTime(disableTime bool){
 	this.disableTime = disableTime
+
+	if disableTime{
+		this.SetTimestampFormat("")
+	}
 }
 
 func (this *GothicLogger) SetFormatter(formatter GothicLogFormatter){
@@ -275,10 +208,6 @@ func (this *GothicLogger) writeFields(logName string, fields EntryFields) {
 		return
 	}
 
-	if !this.disableTime{
-		fields["time"] = time.Now().Format(this.timestampFormat)
-	}
-
 	msg, err := this.formatter.FormatFields(fields)
 	if err != nil{
 		fmt.Println(fmt.Sprintf("format msg error[%s], logName[%s], msg[%+v]",
@@ -288,7 +217,6 @@ func (this *GothicLogger) writeFields(logName string, fields EntryFields) {
 	}
 }
 
-
 func (this *GothicLogger) writeLog(logName string, v ...interface{}) {
 	logger, err := this.getLogger(this.rootPath + "/" + logName)
 	if err != nil {
@@ -297,14 +225,7 @@ func (this *GothicLogger) writeLog(logName string, v ...interface{}) {
 		return
 	}
 
-	var msg string
-	if this.disableTime{
-		msg, err = this.formatter.Format(v)
-	}else {
-		timeNow := time.Now().Format(this.timestampFormat)
-		msg, err = this.formatter.Format(timeNow, v)
-	}
-
+	msg, err := this.formatter.Format(v...)
 	if err != nil{
 		fmt.Println(fmt.Sprintf("format msg error[%s], logName[%s], msg[%+v]",
 			err.Error(), logName, v))

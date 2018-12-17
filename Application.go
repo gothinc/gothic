@@ -79,6 +79,8 @@ func (this *GothicApplication) envInit() {
 
 	//加载配置
 	loadConfig(this.ConfigPath, this.ConfigFile, this.Active)
+
+	this.initLogger()
 }
 
 func (this *GothicApplication) initLogger(){
@@ -109,17 +111,21 @@ func (this *GothicApplication) initLogger(){
 		Logger.SetLogLevel(logLevel)
 	}
 
+	if _, ok := loggerConfig["json_format"]; ok {
+		isJson := Config.GetBool("log.json_format")
+		Logger.SetIsJson(isJson)
+
+		if isJson{
+			Logger.SetFormatter(logger.NewJsonFormatter(logger.DefaultLogTimestampFormat))
+		}
+	}
+
 	if _, ok := loggerConfig["timestamp_format"]; ok{
 		Logger.SetTimestampFormat(Config.GetString("log.timestamp_format"))
 	}
 
 	if _, ok := loggerConfig["disable_time"]; ok{
 		Logger.SetDisableTime(Config.GetBool("log.disable_time"))
-	}
-
-	if _, ok := loggerConfig["json_format"]; ok {
-		Logger.SetIsJson(Config.GetBool("log.json_format"))
-		Logger.SetFormatter(logger.NewJsonFormatter())
 	}
 }
 

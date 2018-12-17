@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 )
 
 /**
@@ -15,15 +16,22 @@ import (
 const defaultTextLogSeparator = ","
 
 type TextFormatter struct {
+	TimestampFormat string
+
 	//是否用引号包起空值
 	QuoteEmptyFields bool
 	Separator string
 }
 
-func NewTextFormatter() *TextFormatter{
+func NewTextFormatter(timestampFormat string) *TextFormatter{
 	return &TextFormatter{
+		TimestampFormat: timestampFormat,
 		Separator: defaultTextLogSeparator,
 	}
+}
+
+func (this *TextFormatter) SetTimestampFormat(format string){
+	this.TimestampFormat = format
 }
 
 func (this *TextFormatter) SetSeparator(s string) *TextFormatter{
@@ -43,6 +51,10 @@ func (this *TextFormatter) FormatFields(v EntryFields) (string, error) {
 	}
 
 	msgstr = strings.TrimRight(msgstr, this.Separator)
+	if this.TimestampFormat != "" {
+		msgstr = fmt.Sprintf("[%s] %s", time.Now().Format(this.TimestampFormat), msgstr)
+	}
+
 	return msgstr, nil
 }
 
@@ -64,6 +76,10 @@ func (this *TextFormatter) Format(v ...interface{}) (string, error)  {
 	}
 
 	msgstr = strings.TrimRight(msgstr, this.Separator)
+	if this.TimestampFormat != "" {
+		msgstr = fmt.Sprintf("[%s] %s", time.Now().Format(this.TimestampFormat), msgstr)
+	}
+
 	return msgstr, nil
 }
 
