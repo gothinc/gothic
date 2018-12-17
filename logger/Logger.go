@@ -51,6 +51,8 @@ func NewDefaultLogger() *GothicLogger{
 		timestampFormat: defaultLogTimestampFormat,
 		isJson: false,
 		formatter: NewTextFormatter(),
+		loggerMap: make(map[string]*log.Logger),
+		fdMap: make(map[string]*os.File),
 	}
 }
 
@@ -62,6 +64,8 @@ func NewLogger(rootPath, prefix, suffix, timestampFormat string, logLevel LogLev
 		suffix: suffix,
 		timestampFormat: timestampFormat,
 		isJson: isJson,
+		loggerMap: make(map[string]*log.Logger),
+		fdMap: make(map[string]*os.File),
 	}
 
 	if isJson{
@@ -73,7 +77,7 @@ func NewLogger(rootPath, prefix, suffix, timestampFormat string, logLevel LogLev
 	return logger
 }
 
-func newGothicLogger() *GothicLogger{
+func NewGothicLogger() *GothicLogger{
 	Config := gothic.GetConfig()
 
 	//get logger config
@@ -102,7 +106,7 @@ func newGothicLogger() *GothicLogger{
 	gothicLogger.logLevel = defaultLogLevel
 	if _, ok := loggerConfig["level"]; ok{
 		gothicLogger.logLevel = LogLevel(Config.GetInt("log.level"))
-		if !checkLogLevel(gothicLogger.logLevel){
+		if !CheckLogLevel(gothicLogger.logLevel){
 			panic(fmt.Sprintf("invalid log level, config level: %d", gothicLogger.logLevel))
 		}
 	}
@@ -144,6 +148,38 @@ type GothicLogger struct {
 	disableTime     bool
 }
 
+func (this *GothicLogger) SetTimestampFormat(timestampFormat string){
+	this.timestampFormat = timestampFormat
+}
+
+func (this *GothicLogger) SetDisableTime(disableTime bool){
+	this.disableTime = disableTime
+}
+
+func (this *GothicLogger) SetFormatter(formatter GothicLogFormatter){
+	this.formatter = formatter
+}
+
+func (this *GothicLogger) SetLogLevel(logLevel LogLevel){
+	this.logLevel = logLevel
+}
+
+func (this *GothicLogger) SetPrefix(prefix string){
+	this.prefix = prefix
+}
+
+func (this *GothicLogger) SetSuffix(suffix string){
+	this.suffix = suffix
+}
+
+func (this *GothicLogger) SetRootPath(rootPath string){
+	this.rootPath = rootPath
+}
+
+func (this *GothicLogger) SetIsJson(isJson bool){
+	this.isJson = isJson
+}
+
 //判断文件或目录是否存在
 func PathExist(path string) bool {
 	_, err := os.Stat(path)
@@ -151,10 +187,6 @@ func PathExist(path string) bool {
 		return false
 	}
 	return true
-}
-
-func (this *GothicLogger) SetJsonFormat(isJson bool){
-	this.isJson = isJson
 }
 
 func (this *GothicLogger) Debug(v ...interface{}) {
@@ -297,7 +329,7 @@ func (this *GothicLogger) Formatter(fields EntryFields) *Entry{
 	return entry
 }
 
-func checkLogLevel(level LogLevel) bool{
+func CheckLogLevel(level LogLevel) bool{
 	if level < LevelDebug || level > LevelError{
 		return false
 	}

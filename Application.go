@@ -10,6 +10,9 @@ import (
 	"os"
 	"path"
 	"flag"
+	"fmt"
+	"log"
+	"github.com/gothinc/gothic/logger"
 )
 
 //请求体最大字节数
@@ -77,6 +80,48 @@ func (this *GothicApplication) envInit() {
 
 	//加载配置
 	loadConfig(this.ConfigPath, this.ConfigFile, this.Active)
+}
+
+func (this *GothicApplication) initLogger(){
+	//get logger config
+	loggerConfig := Config.GetStringMap("log")
+	if loggerConfig == nil || len(loggerConfig) == 0{
+		return
+	}
+
+	if _, ok := loggerConfig["root"]; ok{
+		Logger.SetRootPath(Config.GetString("log.root"))
+	}
+
+	if _, ok := loggerConfig["prefix"]; ok{
+		Logger.SetPrefix(Config.GetString("log.prefix"))
+	}
+
+	if _, ok := loggerConfig["suffix"]; ok{
+		Logger.SetSuffix(Config.GetString("log.suffix"))
+	}
+
+	if _, ok := loggerConfig["level"]; ok{
+		logLevel := logger.LogLevel(Config.GetInt("log.level"))
+		if !logger.CheckLogLevel(logLevel){
+			panic(fmt.Sprintf("invalid log level, config level: %d", logLevel))
+		}
+		
+		Logger.SetLogLevel(logLevel)
+	}
+
+	if _, ok := loggerConfig["timestamp_format"]; ok{
+		Logger.SetTimestampFormat(Config.GetString("log.timestamp_format"))
+	}
+
+	if _, ok := loggerConfig["disable_time"]; ok{
+		Logger.SetDisableTime(Config.GetBool("log.disable_time"))
+	}
+
+	if _, ok := loggerConfig["json_format"]; ok {
+		Logger.SetIsJson(Config.GetBool("log.json_format"))
+		Logger.SetFormatter(logger.NewJsonFormatter())
+	}
 }
 
 func (this *GothicApplication) parseFlag(){

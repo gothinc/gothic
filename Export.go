@@ -1,4 +1,6 @@
-package logger
+package gothic
+
+import "github.com/gothinc/gothic/logger"
 
 /**
  * @desc Export
@@ -6,24 +8,24 @@ package logger
  * @date 2018-12-13 15:56
  */
 
-var gothicLogger = newGothicLogger()
+var Logger = logger.NewDefaultLogger()
 
 func Debug(v ...interface{})  {
-	gothicLogger.Debug(v)
+	Logger.Debug(v)
 }
 
 func Access(v ...interface{})  {
-	gothicLogger.Access(v)
+	Logger.Access(v)
 }
 
 func Warn(v ...interface{})  {
-	gothicLogger.Warn(v)
+	Logger.Warn(v)
 }
 
 func Error(v ...interface{})  {
-	gothicLogger.Error(v)
+	Logger.Error(v)
 }
 
 func Extend(logName string, v ...interface{})  {
-	gothicLogger.Extend(logName, v)
+	Logger.Extend(logName, v)
 }
