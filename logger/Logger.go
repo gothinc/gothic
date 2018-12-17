@@ -2,7 +2,7 @@ package logger
 
 import (
 	"fmt"
-	"gothic"
+	"github.com/gothinc/gothic"
 	"log"
 	"os"
 	"sync"
