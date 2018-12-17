@@ -11,7 +11,6 @@ import (
 	"path"
 	"flag"
 	"fmt"
-	"log"
 	"github.com/gothinc/gothic/logger"
 )
 
