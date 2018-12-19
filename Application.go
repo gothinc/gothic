@@ -66,7 +66,28 @@ func (this *GothicApplication) Run(){
 	//1. 初始化环境
 	this.envInit()
 
-	//2. 扫描controller初始化路由
+	//2. 启动服务
+	this.startServer()
+}
+
+func (this *GothicApplication) AddController(controller interface{}){
+	gothicHttpApiServer.AddController(controller)
+}
+
+func (this *GothicApplication) startServer(){
+	port := Config.GetInt("server.http_port")
+	if port == 0{
+		port = DefaultListenPort
+	}
+
+	gothicHttpApiServer.HttpAddr = Config.GetString("server.http_addr")
+	gothicHttpApiServer.HttpPort = port
+	gothicHttpApiServer.ReadTimeout = Config.GetInt("server.http_read_timeout")
+	gothicHttpApiServer.WriteTimeout = Config.GetInt("server.http_write_timeout")
+	gothicHttpApiServer.IdleTimeout = Config.GetInt("server.http_idle_timeout")
+	gothicHttpApiServer.hanlder.enablePprof = Config.GetBool("server.enable_pprof")
+
+	gothicHttpApiServer.Run()
 }
 
 func (this *GothicApplication) envInit() {
@@ -80,11 +101,11 @@ func (this *GothicApplication) envInit() {
 	//加载配置
 	loadConfig(this.ConfigPath, this.ConfigFile, this.Active)
 
+	//加载日志组件
 	this.initLogger()
 }
 
 func (this *GothicApplication) initLogger(){
-	//get logger config
 	loggerConfig := Config.GetStringMap("log")
 	if loggerConfig == nil || len(loggerConfig) == 0{
 		return

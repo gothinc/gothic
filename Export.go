@@ -12,7 +12,9 @@ import (
 
 var Logger = logger.NewDefaultLogger()
 
-func Format(fields logger.EntryFields) *logger.Entry{
+type EntryFields = logger.EntryFields
+
+func Format(fields EntryFields) *logger.Entry{
 	return Logger.Format(fields)
 }
 
