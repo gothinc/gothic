@@ -84,13 +84,19 @@ const METHOD_EXPORT_TAG = "Action"
 type httpApiHandler struct {
 	routMap     map[string]map[string]reflect.Type //key:controller: {key:method value:reflect.type}
 	enablePprof bool
+	Application *GothicApplication
 }
 
 func (this *httpApiHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
-			Logger.Format(EntryFields{"msg": "parse request error", "error": err}).Error()
-			http.Error(rw, fmt.Sprintln(err), http.StatusInternalServerError)
+			switch errInfo := err.(type) {
+			case error:
+				http.Error(rw, errInfo.Error(), http.StatusOK)
+			default:
+				Logger.Format(EntryFields{"msg": "parse request error", "error": err}).Error()
+				http.Error(rw, fmt.Sprintln(err), http.StatusInternalServerError)
+			}
 		}
 	}()
 
@@ -136,20 +142,37 @@ func (this *httpApiHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	threadContext := &ThreadContext{
+		Application: Application,
+		Controller: cname,
+		Action: mname,
+		Params: make(map[string]interface{}),
+	}
+	if err := InvokeThreadHook(cname, mname, BeforeInitController, threadContext); err != nil{
+		Logger.Format(EntryFields{"msg": "Hook Exception", "point": BeforeInitController, "url": router, "error": fmt.Sprint(err)}).Error()
+		panic(err)
+	}
+
 	vc := reflect.New(contollerType)
 	var in []reflect.Value
 	var method reflect.Value
 
 	defer func() {
 		if err := recover(); err != nil {
-			Logger.Format(EntryFields{"msg": "Handle Request Exception", "url": router, "error": fmt.Sprint(err)}).Error()
-			http.Error(rw, fmt.Sprintln("Internal Server Error"), http.StatusInternalServerError)
+			switch errInfo := err.(type) {
+			case error:
+				http.Error(rw, errInfo.Error(), http.StatusOK)
+			default:
+				Logger.Format(EntryFields{"msg": "Handle Request Exception", "url": router, "error": fmt.Sprint(err)}).Error()
+				http.Error(rw, fmt.Sprintln("Internal Server Error"), http.StatusInternalServerError)
+			}
 		}
 	}()
 
-	in = make([]reflect.Value, 2)
-	in[0] = reflect.ValueOf(rw)
-	in[1] = reflect.ValueOf(r)
+	in = make([]reflect.Value, 3)
+	in[0] = reflect.ValueOf(threadContext)
+	in[1] = reflect.ValueOf(rw)
+	in[2] = reflect.ValueOf(r)
 	method = vc.MethodByName("Init")
 	method.Call(in)
 
@@ -157,11 +180,22 @@ func (this *httpApiHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	in = make([]reflect.Value, 0)
 	method = vc.MethodByName(mname)
+	if err := InvokeThreadHook(cname, mname, BeforeInvokeAction, threadContext); err != nil{
+		Logger.Format(EntryFields{"msg": "Hook Exception", "point": BeforeInvokeAction, "url": router, "error": fmt.Sprint(err)}).Error()
+		panic(err)
+	}
 	method.Call(in)
+	if err := InvokeThreadHook(cname, mname, AfterInvokeAction, threadContext); err != nil{
+		Logger.Format(EntryFields{"msg": "Hook Exception", "point": AfterInvokeAction, "url": router, "error": fmt.Sprint(err)}).Error()
+		panic(err)
+	}
 
 	//post request
-	method = vc.MethodByName("Destroy")
+	method = vc.MethodByName("Destruct")
 	method.Call(in)
+	if err := InvokeThreadHook(cname, mname, AfterSendResponse, threadContext); err != nil{
+		Logger.Format(EntryFields{"msg": "Hook Exception", "point": AfterSendResponse, "url": router, "error": fmt.Sprint(err)}).Error()
+	}
 }
 
 func (this *httpApiHandler) addController(c interface{}) {
@@ -182,4 +216,3 @@ func (this *httpApiHandler) addController(c interface{}) {
 		}
 	}
 }
-

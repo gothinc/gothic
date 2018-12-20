@@ -2,9 +2,8 @@ package gothic
 
 import (
 	"net/http"
-	"time"
-	"encoding/json"
 	"strconv"
+	"github.com/json-iterator/go"
 )
 
 /**
@@ -16,44 +15,49 @@ import (
 type Controller struct {
 	rw           http.ResponseWriter
 	r            *http.Request
-	startTime    time.Time
+	outputBody   []byte
 	OutputDirect bool //是否直接输出到http
+
+	Context  *ThreadContext
 }
 
-func (this *Controller) Init(rw http.ResponseWriter, r *http.Request) {
-	this.startTime = time.Now()
+func (this *Controller) Init(Context *ThreadContext, rw http.ResponseWriter, r *http.Request) {
 	this.rw = rw
 	this.r = r
+	this.Context = Context
 	this.OutputDirect = true
 }
 
-func (this *Controller) Destroy(){
+func (this *Controller) Destruct(){
+	this.writeToWriter(this.outputBody)
+}
 
+func (this *Controller) OutputString(data string){
+	this.rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	this.outputBody = []byte(data)
 }
 
 func (this *Controller) JsonSucc(data interface{}) {
-	errInfo := ""
-	this.JsonFail(errInfo, data)
+	this.JsonFail(DefaultGothicResSucc, DefaultGothicResMsg, data)
 }
 
-func (this *Controller) JsonFail(errInfo string, data interface{}) {
-	ret := map[string]interface{}{
-		"Errno":     0,
-		"Errmsg":    "ok",
-		"Data":      data,
+func (this *Controller) JsonFail(code int, message string, data interface{}) {
+	ret := GothicResponseBody{
+		Errno: code,
+		Errmsg: message,
+		Data: data,
 	}
 
-	content, err := json.MarshalIndent(ret, "", "  ")
+	content, err := jsoniter.Marshal(ret)
 	if err != nil {
 		panic("server exception")
 	}
 
 	this.rw.Header().Set("Content-Type", "application/json;charset=UTF-8")
-	this.writeToWriter(content)
+	this.outputBody = content
 }
 
 func (this *Controller) writeToWriter(rb []byte) {
-	//this.rw.Header().Set("Content-Length", strconv.Itoa(len(rb)))
 	if this.OutputDirect {
 		this.rw.Write(rb)
 	}
@@ -67,7 +71,7 @@ func (this *Controller) GetString(key string, defaultValue string) string {
 	return ret
 }
 
-func (this *Controller) GetStrings(key string) []string {
+func (this *Controller) GetStringSlice(key string) []string {
 	if this.r.Form == nil {
 		return []string{}
 	}

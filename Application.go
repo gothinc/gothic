@@ -28,9 +28,6 @@ const (
 var Application = NewGothicApplication()
 
 type GothicApplication struct{
-	//全局上下文环境
-	Context GothicContext
-
 	BasePath string
 	ConfigPath string
 	ConfigFile string
@@ -38,28 +35,22 @@ type GothicApplication struct{
 	//当前模式(开发或线上环境)
 	Active string
 
-	//全局框架hook集合
-	globalHooks map[HookPoint][]hookFunc
-
 	maxMultipartMemory int64
+
+	//用户自定义全局变量
+	DefinedVariables map[string]interface{}
 }
 
 func NewGothicApplication() *GothicApplication{
 	return &GothicApplication{
-		Context: GothicContext{},
-		globalHooks: map[HookPoint][]hookFunc{},
 		maxMultipartMemory: defaultMaxMultipartMemory,
 		Active: "",
 		BasePath: ".",
 	}
 }
 
-func (this *GothicApplication) AddHook(point HookPoint, hook hookFunc){
-	if _, ok := this.globalHooks[point]; !ok{
-		this.globalHooks[point] = []hookFunc{}
-	}
-
-	this.globalHooks[point] = append(this.globalHooks[point], hook)
+func AddDefinedVariable(key string, value interface{}){
+	Application.DefinedVariables[key] = value
 }
 
 func (this *GothicApplication) Run(){
@@ -87,6 +78,8 @@ func (this *GothicApplication) startServer(){
 	gothicHttpApiServer.IdleTimeout = Config.GetInt("server.http_idle_timeout")
 	gothicHttpApiServer.hanlder.enablePprof = Config.GetBool("server.enable_pprof")
 
+	gothicHttpApiServer.hanlder.Application = this
+
 	gothicHttpApiServer.Run()
 }
 
@@ -99,10 +92,14 @@ func (this *GothicApplication) envInit() {
 	this.parseFlag()
 
 	//加载配置
+	InvokeSystemHookChain(BeforeConfingLoad)
 	loadConfig(this.ConfigPath, this.ConfigFile, this.Active)
+	InvokeSystemHookChain(AfterConfigLoad)
 
 	//加载日志组件
+	InvokeSystemHookChain(BeforLoggerLoad)
 	this.initLogger()
+	InvokeSystemHookChain(AfterLoggerLoad)
 }
 
 func (this *GothicApplication) initLogger(){
