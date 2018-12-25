@@ -39,20 +39,28 @@ func (this *TextFormatter) SetSeparator(s string) *TextFormatter{
 	return this
 }
 
-func (this *TextFormatter) FormatFields(v EntryFields) (string, error) {
+func (this *TextFormatter) FormatFields(v EntryFieldsAny) (string, error) {
 	msgstr := ""
-	var keys []string
-	for k := range v {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		msgstr = msgstr + fmt.Sprintf("%s=%s%s", k, this.appendValue(v[k]), this.Separator)
-	}
 
-	msgstr = strings.TrimRight(msgstr, this.Separator)
-	if this.TimestampFormat != "" {
-		msgstr = fmt.Sprintf("[%s] %s", time.Now().Format(this.TimestampFormat), msgstr)
+	switch entity := v.(type) {
+	case EntryFields:
+		var keys []string
+		for k := range entity {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			msgstr = msgstr + fmt.Sprintf("%s=%s%s", k, this.appendValue(entity[k]), this.Separator)
+		}
+
+		msgstr = strings.TrimRight(msgstr, this.Separator)
+		if this.TimestampFormat != "" {
+			msgstr = fmt.Sprintf("%s=%s%s%s",
+				DefaultTimeKey, this.appendValue(time.Now().Format(this.TimestampFormat)), this.Separator, msgstr)
+		}
+	default:
+		msgstr = fmt.Sprintf("%v", entity)
+		break
 	}
 
 	return msgstr, nil

@@ -160,7 +160,12 @@ func (this *httpApiHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			switch errInfo := err.(type) {
+			case GothicResponse:
+				in = []reflect.Value{reflect.ValueOf(err)}
+				method := vc.MethodByName("OutputError")
+				method.Call(in)
 			case error:
+				Logger.Format(EntryFields{"msg": "Handle Request Exception", "url": router, "error": errInfo.Error()}).Error()
 				http.Error(rw, errInfo.Error(), http.StatusOK)
 			default:
 				Logger.Format(EntryFields{"msg": "Handle Request Exception", "url": router, "error": fmt.Sprint(err)}).Error()

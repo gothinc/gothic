@@ -14,3 +14,17 @@ type ThreadContext struct{
 	//用户自定义变量集合
 	Params      map[string]interface{}
 }
+
+func (threadContext *ThreadContext) GetParamString(key string) string{
+	val, ok := threadContext.Params[key]
+	if !ok{
+		return ""
+	}
+
+	valStr, ok := val.(string)
+	if !ok{
+		return ""
+	}
+
+	return valStr
+}

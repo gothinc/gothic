@@ -30,7 +30,12 @@ func (this *JsonFormatter) Format(v ...interface{}) (string, error)  {
 	if this.TimestampFormat != ""{
 		ret["time"] = time.Now().Format(this.TimestampFormat)
 	}
-	ret["msg"] = v
+
+	if len(v) == 1{
+		ret["msg"] = v[0]
+	}else{
+		ret["msg"] = v
+	}
 
 	cont, err := jsoniter.MarshalToString(ret)
 	if err != nil{
@@ -40,15 +45,16 @@ func (this *JsonFormatter) Format(v ...interface{}) (string, error)  {
 	return cont, nil
 }
 
-func (this *JsonFormatter) FormatFields(fields EntryFields) (string, error)  {
-	if this.TimestampFormat != ""{
-		fields["time"] = time.Now().Format(this.TimestampFormat)
+func (this *JsonFormatter) FormatFields(fields EntryFieldsAny) (cont string, err error)  {
+	switch entity := fields.(type) {
+	case EntryFields:
+		if this.TimestampFormat != "" {
+			entity["time"] = time.Now().Format(this.TimestampFormat)
+		}
+		cont, err = jsoniter.MarshalToString(entity)
+	default:
+		cont, err = jsoniter.MarshalToString(fields)
 	}
 
-	cont, err := jsoniter.MarshalToString(fields)
-	if err != nil{
-		return "", err
-	}
-
-	return cont, nil
+	return
 }

@@ -13,13 +13,14 @@ import (
 const defaultEntryFieldsSize = 4
 
 type EntryFields map[string]interface{}
+type EntryFieldsAny interface{}
 
 type Entry struct {
 	logger *GothicLogger
-	fields EntryFields
+	fields EntryFieldsAny
 }
 
-func NewEntry(logger *GothicLogger, fields EntryFields) *Entry{
+func NewEntry(logger *GothicLogger, fields EntryFieldsAny) *Entry{
 	return &Entry{
 		logger: logger,
 		fields: fields,

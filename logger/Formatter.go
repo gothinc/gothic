@@ -8,6 +8,6 @@ package logger
 
 type GothicLogFormatter interface {
 	Format(v ...interface{}) (string, error)
-	FormatFields(v EntryFields) (string, error)
+	FormatFields(v EntryFieldsAny) (string, error)
 	SetTimestampFormat(format string)
 }

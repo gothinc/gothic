@@ -24,6 +24,7 @@ const(
 	DefaultLogSuffix = ".log"
 	DefaultLogLevel = LevelAccess
 	DefaultLogTimestampFormat = "2006-01-02 15:04:05"
+	DefaultTimeKey = "logtime"
 )
 
 func getLevelName(level LogLevel) string{
@@ -97,6 +98,10 @@ func (this *GothicLogger) SetLogLevel(logLevel LogLevel){
 	this.logLevel = logLevel
 }
 
+func (this *GothicLogger) GetLogLevel() LogLevel{
+	return this.logLevel
+}
+
 func (this *GothicLogger) SetPrefix(prefix string){
 	this.prefix = prefix
 }
@@ -113,7 +118,7 @@ func (this *GothicLogger) SetIsJson(isJson bool){
 	this.isJson = isJson
 }
 
-func (this *GothicLogger) Format(fields EntryFields) *Entry{
+func (this *GothicLogger) Format(fields EntryFieldsAny) *Entry{
 	entry := NewEntry(this, fields)
 	return entry
 }
@@ -205,7 +210,7 @@ func (this *GothicLogger) getLogger(logName string) (*log.Logger, error) {
 	retLogger, ok := this.loggerMap[logName]
 	return retLogger, nil
 }
-func (this *GothicLogger) writeFields(logName string, fields EntryFields) {
+func (this *GothicLogger) writeFields(logName string, fields EntryFieldsAny) {
 	logger, err := this.getLogger(this.rootPath + "/" + logName)
 	if err != nil {
 		timeNow := time.Now().Format(this.timestampFormat)

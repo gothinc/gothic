@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"github.com/json-iterator/go"
+	"fmt"
 )
 
 /**
@@ -14,7 +15,7 @@ import (
 
 type Controller struct {
 	rw           http.ResponseWriter
-	r            *http.Request
+	R            *http.Request
 	outputBody   []byte
 	OutputDirect bool //是否直接输出到http
 
@@ -23,13 +24,43 @@ type Controller struct {
 
 func (this *Controller) Init(Context *ThreadContext, rw http.ResponseWriter, r *http.Request) {
 	this.rw = rw
-	this.r = r
+	this.R = r
 	this.Context = Context
 	this.OutputDirect = true
 }
 
 func (this *Controller) Destruct(){
 	this.writeToWriter(this.outputBody)
+}
+
+/**
+ * @desc action处理过程panic后，框架会调用该方法生成响应
+ * @author zhaojiangwei
+ * @date 16:10 2018/12/24
+ * @param
+ * @return
+ **/
+func (this *Controller) OutputError(response GothicResponse) {
+	switch responseBody := response.(type) {
+	case GothicResponseBody:
+		Logger.Format(EntryFields{
+			"type": "outputError",
+			"info": responseBody,
+		}).Warn()
+
+		content, err := jsoniter.Marshal(responseBody)
+		if err != nil {
+			http.Error(this.rw, fmt.Sprintln("Internal Server Error"), http.StatusInternalServerError)
+			return
+		}
+
+		this.rw.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		this.writeToWriter(content)
+		return
+	default:
+		http.Error(this.rw, fmt.Sprintln("Internal Server Error"), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (this *Controller) OutputString(data string){
@@ -64,7 +95,7 @@ func (this *Controller) writeToWriter(rb []byte) {
 }
 
 func (this *Controller) GetString(key string, defaultValue string) string {
-	ret := this.r.FormValue(key)
+	ret := this.R.FormValue(key)
 	if ret == "" {
 		ret = defaultValue
 	}
@@ -72,15 +103,15 @@ func (this *Controller) GetString(key string, defaultValue string) string {
 }
 
 func (this *Controller) GetStringSlice(key string) []string {
-	if this.r.Form == nil {
+	if this.R.Form == nil {
 		return []string{}
 	}
-	vs := this.r.Form[key]
+	vs := this.R.Form[key]
 	return vs
 }
 
 func (this *Controller) GetInt(key string, defaultValue int64) int64 {
-	ret, err := strconv.ParseInt(this.r.FormValue(key), 10, 64)
+	ret, err := strconv.ParseInt(this.R.FormValue(key), 10, 64)
 	if err != nil {
 		ret = defaultValue
 	}
@@ -88,7 +119,7 @@ func (this *Controller) GetInt(key string, defaultValue int64) int64 {
 }
 
 func (this *Controller) GetBool(key string, defaultValue bool) bool {
-	ret, err := strconv.ParseBool(this.r.FormValue(key))
+	ret, err := strconv.ParseBool(this.R.FormValue(key))
 	if err != nil {
 		ret = defaultValue
 	}
