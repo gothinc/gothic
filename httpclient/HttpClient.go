@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 	"io/ioutil"
-	"net/url"
 	"io"
 	"strings"
 	"errors"
@@ -39,7 +38,7 @@ func NewHttpClient(maxIdleConns, idleConnTimeout, httpTimeout, dialTimeout int) 
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
-				Timeout:   time.Duration(dialTimeout) * time.Second,
+				Timeout:   time.Duration(dialTimeout) * time.Millisecond,
 			}).DialContext,
 			MaxIdleConns:        maxIdleConns,
 			MaxIdleConnsPerHost: maxIdleConns,
@@ -55,7 +54,7 @@ func NewHttpClient(maxIdleConns, idleConnTimeout, httpTimeout, dialTimeout int) 
 }
 
 func (this *HttpClient) Get(uri string, headers map[string]string, cookie []http.Cookie) (ClientResponse) {
-	uri = this.encodeUrl(uri)
+	uri = encodeUrl(uri)
 	req, err := http.NewRequest("GET", uri, nil)
 
 	if err != nil {
@@ -82,7 +81,7 @@ func (this *HttpClient) Post(url string, body string, headers map[string]string,
 
 func (this *HttpClient) execute(req *http.Request, headers map[string]string, cookie []http.Cookie) (response ClientResponse) {
 	response.Code = ClientCodeUnset
-	
+
 	if headers != nil {
 		for k, v := range headers {
 			req.Header.Add(k, v)
@@ -105,6 +104,8 @@ func (this *HttpClient) execute(req *http.Request, headers map[string]string, co
 	}
 
 	defer resp.Body.Close()
+
+	response.Header = resp.Header
 	if resp.StatusCode != 200 {
 		response.Code = ClientHttpCodeFail
 		response.StatusCode = resp.StatusCode
@@ -124,11 +125,4 @@ func (this *HttpClient) execute(req *http.Request, headers map[string]string, co
 	response.StatusCode = resp.StatusCode
 	response.Data = body
 	return
-}
-
-func (this *HttpClient) encodeUrl(uri string) string {
-	urlObj, _ := url.Parse(uri)
-	queryObj := urlObj.Query()
-	urlObj.RawQuery = queryObj.Encode()
-	return urlObj.String()
 }

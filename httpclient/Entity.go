@@ -1,5 +1,7 @@
 package httpclient
 
+import "net/http"
+
 /**
  * @desc Entity
  * @author zhaojiangwei
@@ -30,6 +32,9 @@ type ClientResponse struct{
 	Cost 		int64		`json:"cost"`
 	//错误信息
 	Error 		error		`json:"error"`
+
+	//http header
+	Header 		http.Header	`json:"header"`
 	//http请求返回数据
 	Data 		[]byte		`json:"data"`
 }
