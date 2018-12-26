@@ -1,6 +1,8 @@
 package gothic
 
-import "sync"
+import (
+	"sync"
+)
 
 /**
  * @desc Controller

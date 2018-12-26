@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 	"errors"
+	"compress/gzip"
 )
 
 /**
@@ -16,12 +17,66 @@ import (
  * @date 2018-12-25 14:44
  */
 
+const(
+	DefaultUserAgent = "GothicServer"
+)
+
 var (
 	httpClient *http.Client
 )
 
 type HttpClient struct {
 	client *http.Client
+}
+
+var DefaultPoolSetting = HttpPoolSetting{
+	MaxIdleConns: 		10,
+	IdleConnTimeout: 	60,
+	HttpTimeout: 		5000,
+	DialTimeout: 		2000,
+}
+
+var DefaultHttpSetting = HttpSetting{
+	UserAgent:      DefaultUserAgent,
+	Gzip:          	false,
+	Headers:		nil,
+	Cookies:		nil,
+}
+
+//连接池设置
+type HttpPoolSetting struct {
+	MaxIdleConns 		int
+	IdleConnTimeout 	int		//单位s
+	HttpTimeout 		int		//ms
+	DialTimeout			int		//ms
+}
+
+//http请求设置
+type HttpSetting struct {
+	Gzip bool
+	UserAgent string
+	Headers map[string]string
+	Cookies []http.Cookie
+}
+
+func NewDefaultHttpClient() *HttpClient {
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   time.Duration(DefaultPoolSetting.DialTimeout) * time.Millisecond,
+			}).DialContext,
+			MaxIdleConns:        DefaultPoolSetting.MaxIdleConns,
+			MaxIdleConnsPerHost: DefaultPoolSetting.MaxIdleConns,
+			IdleConnTimeout:     time.Duration(DefaultPoolSetting.IdleConnTimeout) * time.Second,
+		},
+
+		Timeout: time.Duration(DefaultPoolSetting.HttpTimeout) * time.Millisecond,
+	}
+
+	return &HttpClient{
+		client: client,
+	}
 }
 
 /**
@@ -33,19 +88,19 @@ type HttpClient struct {
  * @param dialKeepalive: 长连接空闲时间
  * @return
  **/
-func NewHttpClient(maxIdleConns, idleConnTimeout, httpTimeout, dialTimeout int) *HttpClient {
+func NewHttpClient(setting HttpPoolSetting) *HttpClient {
 	client := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
-				Timeout:   time.Duration(dialTimeout) * time.Millisecond,
+				Timeout:   time.Duration(setting.DialTimeout) * time.Millisecond,
 			}).DialContext,
-			MaxIdleConns:        maxIdleConns,
-			MaxIdleConnsPerHost: maxIdleConns,
-			IdleConnTimeout:     time.Duration(idleConnTimeout) * time.Second,
+			MaxIdleConns:        setting.MaxIdleConns,
+			MaxIdleConnsPerHost: setting.MaxIdleConns,
+			IdleConnTimeout:     time.Duration(setting.IdleConnTimeout) * time.Second,
 		},
 
-		Timeout: time.Duration(httpTimeout) * time.Millisecond,
+		Timeout: time.Duration(setting.HttpTimeout) * time.Millisecond,
 	}
 
 	return &HttpClient{
@@ -53,18 +108,18 @@ func NewHttpClient(maxIdleConns, idleConnTimeout, httpTimeout, dialTimeout int) 
 	}
 }
 
-func (this *HttpClient) Get(uri string, headers map[string]string, cookie []http.Cookie) (ClientResponse) {
+func (this *HttpClient) Get(uri string, setting *HttpSetting) (*ClientResponse) {
 	uri = encodeUrl(uri)
 	req, err := http.NewRequest("GET", uri, nil)
 
 	if err != nil {
-		return ClientResponse{Code: ClientNewReqFail, Error: err}
+		return &ClientResponse{Code: ClientNewReqFail, Error: err}
 	}
 
-	return this.execute(req, headers, cookie)
+	return this.execute(req, setting)
 }
 
-func (this *HttpClient) Post(url string, body string, headers map[string]string, cookie []http.Cookie) (ClientResponse) {
+func (this *HttpClient) Post(url string, body string, setting *HttpSetting) (*ClientResponse) {
 	var bodyReader io.Reader
 	if body != "" {
 		bodyReader = strings.NewReader(body)
@@ -72,24 +127,35 @@ func (this *HttpClient) Post(url string, body string, headers map[string]string,
 
 	req, err := http.NewRequest("POST", url, bodyReader)
 	if err != nil {
-		return ClientResponse{Code: ClientNewReqFail, Error: err}
+		return &ClientResponse{Code: ClientNewReqFail, Error: err}
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return this.execute(req, headers, cookie)
+	return this.execute(req, setting)
 }
 
-func (this *HttpClient) execute(req *http.Request, headers map[string]string, cookie []http.Cookie) (response ClientResponse) {
+func (this *HttpClient) execute(req *http.Request, setting *HttpSetting) (response *ClientResponse) {
+	response = &ClientResponse{}
 	response.Code = ClientCodeUnset
 
-	if headers != nil {
-		for k, v := range headers {
+	if setting == nil{
+		setting = &DefaultHttpSetting
+	}
+
+	if setting.Headers != nil {
+		for k, v := range setting.Headers {
 			req.Header.Add(k, v)
 		}
 	}
 
-	if cookie != nil && len(cookie) > 0 {
-		for _, v := range cookie {
+	if setting.UserAgent != ""{
+		req.Header.Set("User-Agent", setting.UserAgent)
+	}else{
+		req.Header.Set("User-Agent", DefaultUserAgent)
+	}
+
+	if setting.Cookies != nil && len(setting.Cookies) > 0 {
+		for _, v := range setting.Cookies {
 			req.AddCookie(&v)
 		}
 	}
@@ -113,7 +179,22 @@ func (this *HttpClient) execute(req *http.Request, headers map[string]string, co
 		return
 	}
 
-	body, bodyErr := ioutil.ReadAll(resp.Body)
+	var body []byte
+	var bodyErr error
+	if setting.Gzip && resp.Header.Get("Content-Encoding") == "gzip" {
+		reader, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			response.Code = ClientReadBodyFail
+			response.StatusCode = resp.StatusCode
+			response.Error = err
+			return
+		}
+
+		body, bodyErr = ioutil.ReadAll(reader)
+	}else{
+		body, bodyErr = ioutil.ReadAll(resp.Body)
+	}
+
 	if bodyErr != nil {
 		response.Code = ClientReadBodyFail
 		response.StatusCode = resp.StatusCode

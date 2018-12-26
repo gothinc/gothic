@@ -2,6 +2,7 @@ package gothic
 
 import (
 	"github.com/gothinc/gothic/logger"
+	"github.com/gothinc/gothic/httpclient"
 )
 
 /**
@@ -36,4 +37,38 @@ func Error(v ...interface{}) {
 
 func Extend(logName string, v ...interface{}) {
 	Logger.Extend(logName, v...)
+}
+
+
+func GetHttpClient(key string) *httpclient.HttpClient{
+	if client, ok := Application.httpClientHandlers[key]; ok{
+		return client
+	}
+
+	return nil
+}
+
+func AddDefinedVariable(key string, value interface{}){
+	Application.definedVariables[key] = value
+}
+
+func GetDefinedVariable(key string) interface{}{
+	if val, ok := Application.definedVariables[key]; ok{
+		return val
+	}
+	return nil
+}
+
+
+func GetHttpClientPool(name string) *httpclient.HttpClient{
+	handlers := Application.httpClientHandlers
+	if handlers == nil{
+		return nil
+	}
+
+	if client, ok := handlers[name]; ok {
+		return client
+	}
+
+	return nil
 }

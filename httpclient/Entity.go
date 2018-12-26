@@ -1,6 +1,9 @@
 package httpclient
 
-import "net/http"
+import (
+	"net/http"
+	"github.com/json-iterator/go"
+)
 
 /**
  * @desc Entity
@@ -37,4 +40,16 @@ type ClientResponse struct{
 	Header 		http.Header	`json:"header"`
 	//http请求返回数据
 	Data 		[]byte		`json:"data"`
+}
+
+func (response *ClientResponse) ToJson(respData interface{}) (*ClientResponse, error){
+	if response.Code != ClientSucc {
+		return response, response.Error
+	}
+
+	if err := jsoniter.Unmarshal(response.Data, respData); err != nil {
+		return response, err
+	}
+
+	return response, nil
 }

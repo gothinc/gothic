@@ -12,6 +12,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gothinc/gothic/logger"
+	"github.com/gothinc/gothic/httpclient"
 )
 
 //请求体最大字节数
@@ -28,37 +29,70 @@ const (
 var Application = NewGothicApplication()
 
 type GothicApplication struct{
-	BasePath string
-	ConfigPath string
-	ConfigFile string
+	basePath string
+	configPath string
+	configFile string
 
 	//当前模式(开发或线上环境)
-	Active string
+	active string
 
 	maxMultipartMemory int64
 
 	//用户自定义全局变量
-	DefinedVariables map[string]interface{}
+	definedVariables map[string]interface{}
+
+	//httpclient handlers
+	httpClientHandlers map[string]*httpclient.HttpClient
 }
 
 func NewGothicApplication() *GothicApplication{
 	return &GothicApplication{
 		maxMultipartMemory: defaultMaxMultipartMemory,
-		Active: "",
-		BasePath: ".",
+		active: "",
+		basePath: ".",
+		httpClientHandlers: make(map[string]*httpclient.HttpClient),
 	}
-}
-
-func AddDefinedVariable(key string, value interface{}){
-	Application.DefinedVariables[key] = value
 }
 
 func (this *GothicApplication) Run(){
 	//1. 初始化环境
 	this.envInit()
 
-	//2. 启动服务
+	//2. 启动相关服务
+	this.initService()
+
+	//3. 启动服务
 	this.startServer()
+}
+
+func (this *GothicApplication) initService(){
+	this.startHttpClientPool()
+}
+
+func (this *GothicApplication) startHttpClientPool(){
+	key := "application.httpclientpool"
+	service := Config.GetStringMap(key)
+
+	for name, _ := range service{
+		if Config.GetBool(key + "." + name + ".disable"){
+			continue
+		}
+
+		client := this.loadHttpClientPool(key + "." + name)
+		this.httpClientHandlers[name] = client
+	}
+}
+
+func (this *GothicApplication) loadHttpClientPool(key string) *httpclient.HttpClient{
+	httpClient := httpclient.NewHttpClient(httpclient.HttpPoolSetting{
+		MaxIdleConns: Config.GetInt(key + ".max_idle_conn"),
+		IdleConnTimeout: Config.GetInt(key + ".idle_conn_timeout"),
+		HttpTimeout: Config.GetInt(key + ".http_timeout"),
+		DialTimeout: Config.GetInt(key + ".dial_timeout"),
+	})
+
+	println("start " + key + " succ")
+	return httpClient
 }
 
 func (this *GothicApplication) AddController(controller interface{}){
@@ -93,7 +127,7 @@ func (this *GothicApplication) envInit() {
 
 	//加载配置
 	InvokeSystemHookChain(BeforeConfingLoad)
-	loadConfig(this.ConfigPath, this.ConfigFile, this.Active)
+	loadConfig(this.configPath, this.configFile, this.active)
 	InvokeSystemHookChain(AfterConfigLoad)
 
 	//加载日志组件
@@ -155,8 +189,8 @@ func (this *GothicApplication) parseFlag(){
 
 	flag.Parse()
 
-	this.BasePath = *basePath
-	this.ConfigPath = this.BasePath + pathSplitSymbol + *confPath
-	this.ConfigFile = *configFile
-	this.Active = *active
+	this.basePath = *basePath
+	this.configPath = this.basePath + pathSplitSymbol + *confPath
+	this.configFile = *configFile
+	this.active = *active
 }
