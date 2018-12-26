@@ -9,7 +9,11 @@ import "net/url"
  */
 
 func encodeUrl(uri string) string {
-	urlObj, _ := url.Parse(uri)
+	urlObj, err := url.Parse(uri)
+	if err != nil{
+		return ""
+	}
+
 	queryObj := urlObj.Query()
 	urlObj.RawQuery = queryObj.Encode()
 	return urlObj.String()

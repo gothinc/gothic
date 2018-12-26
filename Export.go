@@ -14,8 +14,9 @@ import (
 var Logger = logger.NewDefaultLogger()
 
 type EntryFields = logger.EntryFields
+type EntryFieldsAny = logger.EntryFieldsAny
 
-func Format(fields EntryFields) *logger.Entry{
+func Format(fields EntryFieldsAny) *logger.Entry{
 	return Logger.Format(fields)
 }
 

@@ -23,9 +23,12 @@ import (
  * @return
  **/
 func ShortGet(uri string, timeout int, headers map[string]string, cookie []http.Cookie) (response ClientResponse) {
-	response.Code = ClientCodeUnset
-
 	uri = encodeUrl(uri)
+	if uri == ""{
+		return ClientResponse{Code: ClientNewReqFail, Error: errors.New("encode url error")}
+	}
+
+	response.Code = ClientCodeUnset
 	req, err := http.NewRequest("GET", uri, nil)
 
 	if err != nil {
@@ -38,6 +41,11 @@ func ShortGet(uri string, timeout int, headers map[string]string, cookie []http.
 }
 
 func ShortPost(url string, body string, timeout int, headers map[string]string, cookie []http.Cookie) (ClientResponse) {
+	url = encodeUrl(url)
+	if url == ""{
+		return ClientResponse{Code: ClientNewReqFail, Error: errors.New("encode url error")}
+	}
+
 	var bodyReader io.Reader
 	if body != "" {
 		bodyReader = strings.NewReader(body)

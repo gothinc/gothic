@@ -110,8 +110,11 @@ func NewHttpClient(setting HttpPoolSetting) *HttpClient {
 
 func (this *HttpClient) Get(uri string, setting *HttpSetting) (*ClientResponse) {
 	uri = encodeUrl(uri)
-	req, err := http.NewRequest("GET", uri, nil)
+	if uri == ""{
+		return &ClientResponse{Code: ClientNewReqFail, Error: errors.New("encode url error")}
+	}
 
+	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		return &ClientResponse{Code: ClientNewReqFail, Error: err}
 	}
@@ -120,6 +123,11 @@ func (this *HttpClient) Get(uri string, setting *HttpSetting) (*ClientResponse) 
 }
 
 func (this *HttpClient) Post(url string, body string, setting *HttpSetting) (*ClientResponse) {
+	url = encodeUrl(url)
+	if url == ""{
+		return &ClientResponse{Code: ClientNewReqFail, Error: errors.New("encode url error")}
+	}
+
 	var bodyReader io.Reader
 	if body != "" {
 		bodyReader = strings.NewReader(body)
