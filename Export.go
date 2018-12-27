@@ -40,15 +40,6 @@ func Extend(logName string, v ...interface{}) {
 	Logger.Extend(logName, v...)
 }
 
-
-func GetHttpClient(key string) *httpclient.HttpClient{
-	if client, ok := Application.httpClientHandlers[key]; ok{
-		return client
-	}
-
-	return nil
-}
-
 func AddDefinedVariable(key string, value interface{}){
 	Application.definedVariables[key] = value
 }
@@ -61,13 +52,15 @@ func GetDefinedVariable(key string) interface{}{
 }
 
 
-func GetHttpClientPool(name string) *httpclient.HttpClient{
-	handlers := Application.httpClientHandlers
-	if handlers == nil{
+func GetHttpClient(name string) *httpclient.HttpClient{
+	container := Application.serviceContainer
+	handlers, ok := container["httpclient"]
+	if !ok{
 		return nil
 	}
 
-	if client, ok := handlers[name]; ok {
+	clients := handlers.(map[string]*httpclient.HttpClient)
+	if client, ok := clients[name]; ok {
 		return client
 	}
 

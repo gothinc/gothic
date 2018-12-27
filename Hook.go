@@ -17,8 +17,8 @@ const(
 	AfterSendResponse
 )
 
-type SystemHookChainType map[SystemHookPoint]SystemHookFunc
-type ThreadHookChainType map[string]map[string]map[ThreadHookPoint]ThreadHookFunc
+type SystemHookChainType map[SystemHookPoint][]SystemHookFunc
+type ThreadHookChainType map[string]map[string]map[ThreadHookPoint][]ThreadHookFunc
 
 //全局框架hook集合
 var SystemHookChain SystemHookChainType
@@ -35,7 +35,11 @@ func AddSystemHook(point SystemHookPoint, hookFunc SystemHookFunc)  {
 		SystemHookChain = make(SystemHookChainType)
 	}
 
-	SystemHookChain[point] = hookFunc
+	if _, ok := SystemHookChain[point]; !ok{
+		SystemHookChain[point] = make([]SystemHookFunc, 0)
+	}
+
+	SystemHookChain[point] = append(SystemHookChain[point], hookFunc)
 }
 
 func InvokeSystemHookChain(point SystemHookPoint) error{
@@ -43,8 +47,16 @@ func InvokeSystemHookChain(point SystemHookPoint) error{
 		return nil
 	}
 
-	if fun, ok := SystemHookChain[point]; ok{
-		return fun()
+	if funs, ok := SystemHookChain[point]; ok{
+		var err error
+		for _, fun := range funs{
+			err = fun()
+			if err != nil{
+				break
+			}
+		}
+
+		return err
 	}else{
 		return nil
 	}
@@ -56,14 +68,18 @@ func AddThreadHook(controller, action string, point ThreadHookPoint, hookFunc Th
 	}
 
 	if _, ok := ThreadHookChain[controller]; !ok {
-		ThreadHookChain[controller] = make(map[string]map[ThreadHookPoint]ThreadHookFunc)
+		ThreadHookChain[controller] = make(map[string]map[ThreadHookPoint][]ThreadHookFunc)
 	}
 
 	if _, ok := ThreadHookChain[controller][action]; !ok{
-		ThreadHookChain[controller][action] = make(map[ThreadHookPoint]ThreadHookFunc)
+		ThreadHookChain[controller][action] = make(map[ThreadHookPoint][]ThreadHookFunc)
 	}
 
-	ThreadHookChain[controller][action][point] = hookFunc
+	if _, ok := ThreadHookChain[controller][action][point]; !ok{
+		ThreadHookChain[controller][action][point] = make([]ThreadHookFunc, 0)
+	}
+
+	ThreadHookChain[controller][action][point] = append(ThreadHookChain[controller][action][point], hookFunc)
 }
 
 func InvokeThreadHook(controller, action string, point ThreadHookPoint, context *ThreadContext) error{
@@ -79,8 +95,16 @@ func InvokeThreadHook(controller, action string, point ThreadHookPoint, context 
 		return nil
 	}
 
-	if fun, ok := ThreadHookChain[controller][action][point]; ok{
-		return fun(context)
+	if funs, ok := ThreadHookChain[controller][action][point]; !ok{
+		var err error
+		for _, fun := range funs {
+			err = fun(context)
+			if err != nil{
+				break
+			}
+		}
+
+		return err
 	}
 
 	return nil

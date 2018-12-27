@@ -41,8 +41,7 @@ type GothicApplication struct{
 	//用户自定义全局变量
 	definedVariables map[string]interface{}
 
-	//httpclient handlers
-	httpClientHandlers map[string]*httpclient.HttpClient
+	serviceContainer map[string]interface{}
 }
 
 func NewGothicApplication() *GothicApplication{
@@ -50,7 +49,7 @@ func NewGothicApplication() *GothicApplication{
 		maxMultipartMemory: defaultMaxMultipartMemory,
 		active: "",
 		basePath: ".",
-		httpClientHandlers: make(map[string]*httpclient.HttpClient),
+		serviceContainer: make(map[string]interface{}),
 	}
 }
 
@@ -66,24 +65,27 @@ func (this *GothicApplication) Run(){
 }
 
 func (this *GothicApplication) initService(){
-	this.startHttpClientPool()
+	this.startHttpClient()
 }
 
-func (this *GothicApplication) startHttpClientPool(){
+func (this *GothicApplication) startHttpClient(){
 	key := "application.httpclientpool"
 	service := Config.GetStringMap(key)
+	httpClientHandlers := map[string]*httpclient.HttpClient{}
 
 	for name, _ := range service{
 		if Config.GetBool(key + "." + name + ".disable"){
 			continue
 		}
 
-		client := this.loadHttpClientPool(key + "." + name)
-		this.httpClientHandlers[name] = client
+		client := this.loadHttpClient(key + "." + name)
+		httpClientHandlers[name] = client
 	}
+
+	this.serviceContainer["httpclient"] = httpClientHandlers
 }
 
-func (this *GothicApplication) loadHttpClientPool(key string) *httpclient.HttpClient{
+func (this *GothicApplication) loadHttpClient(key string) *httpclient.HttpClient{
 	httpClient := httpclient.NewHttpClient(httpclient.HttpPoolSetting{
 		MaxIdleConns: Config.GetInt(key + ".max_idle_conn"),
 		IdleConnTimeout: Config.GetInt(key + ".idle_conn_timeout"),
@@ -91,7 +93,7 @@ func (this *GothicApplication) loadHttpClientPool(key string) *httpclient.HttpCl
 		DialTimeout: Config.GetInt(key + ".dial_timeout"),
 	})
 
-	println("start " + key + " succ")
+	println("start httpclient " + key + " succ")
 	return httpClient
 }
 
