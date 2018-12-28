@@ -2,8 +2,21 @@
     gothic.GetRedisClient(name)  如：gothic.GetRedisClient("5695master")
 
 #使用
+1. 普通请求
     client := gothic.GetRedisClient("5695master")
     result, error := redis.Int(client.Do("GET", "test"))
+2. pipeline
+    client := gothic.GetRedisClient("5695master")
+    pipe, err := client.StartPipe
+    if err != nil{
+        return
+    }
+
+    defer pipe.Close()
+    pipe.Send("SET", "TEST", "1")
+    pipe.Send("GET", "EXT")
+    res, err := redis.StringMap(pipe.Exec())
+
 
 #redis配置
 [application.redisclient]

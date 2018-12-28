@@ -25,7 +25,7 @@ func GetConfig() *GothicConfig{
 /**
  * 加配置文件
  */
-func loadConfig(configPath, configFile, active string){
+func loadConfig(configPath, configFile, configType, active string){
 	println("loading config:" +configFile + "...")
 
 	entity := viper.New()
@@ -43,7 +43,7 @@ func loadConfig(configPath, configFile, active string){
 
 	//包含当前环境（线上或开发）的配置
 	if active != "" {
-		loadInclude(entity, configPath, defaultConfigNamePre + "." + active + defaultConfigType)
+		loadInclude(entity, configPath, defaultConfigNamePre + "." + active + "." + configType)
 	}
 
 	Config = &GothicConfig{

@@ -14,6 +14,7 @@ import (
 	"github.com/gothinc/gothic/logger"
 	"github.com/gothinc/gothic/httpclient"
 	"github.com/gothinc/gothic/storage/redis"
+	"strings"
 )
 
 //请求体最大字节数
@@ -21,10 +22,16 @@ const defaultMaxMultipartMemory int64 = 32 << 20
 const pathSplitSymbol = "/"
 
 const (
-	defaultBasePath = ".."
+	defaultBasePath = "."
 	defaultConfPath = "conf"
 	defaultConfigNamePre = "app"
-	defaultConfigType  = ".toml"
+	defaultConfigType  = "toml"
+)
+
+//配置文件类型
+const (
+	ConfigTypeToml = "toml"
+	ConfigTypeYml = "yml"
 )
 
 var Application = NewGothicApplication()
@@ -39,6 +46,9 @@ type GothicApplication struct{
 
 	//当前模式(开发或线上环境)
 	active string
+
+	//日志类型
+	configType string
 
 	maxMultipartMemory int64
 
@@ -59,6 +69,9 @@ func NewGothicApplication() *GothicApplication{
 }
 
 func (this *GothicApplication) Run(){
+	os.Chdir(path.Dir(os.Args[0]))
+	this.parseFlag()
+
 	//1. 初始化环境
 	this.envInit()
 
@@ -193,12 +206,9 @@ func (this *GothicApplication) envInit() {
 	timeNow := time.Now().Format("2006-01-02 15:04:05")
 	println(timeNow, "Starting Application...")
 
-	os.Chdir(path.Dir(os.Args[0]))
-	this.parseFlag()
-
 	//加载配置
 	InvokeSystemHookChain(BeforeConfingLoad)
-	loadConfig(this.configPath, this.configFile, this.active)
+	loadConfig(this.configPath, this.configFile, this.configType, this.active)
 	InvokeSystemHookChain(AfterConfigLoad)
 
 	//加载日志组件
@@ -253,15 +263,17 @@ func (this *GothicApplication) initLogger(){
 }
 
 func (this *GothicApplication) parseFlag(){
-	basePath := flag.String("b", defaultBasePath, "base path")
-	confPath := flag.String("c", defaultConfPath, "config path")
-	configFile := flag.String("f", defaultConfigNamePre + defaultConfigType, "config path")
-	active := flag.String("r", "", "server region")
+	basePath := flag.String("b", defaultBasePath, "optional: root path")
+	confPath := flag.String("c", defaultConfPath, "optional: config path")
+	configType := flag.String("t", defaultConfigType, "optional: config type, yml|toml")
+	configFile := defaultConfigNamePre + "." + *configType
+	active := flag.String("r", " ", "optional: active mode")
 
 	flag.Parse()
 
 	this.basePath = *basePath
 	this.configPath = this.basePath + pathSplitSymbol + *confPath
-	this.configFile = *configFile
-	this.active = *active
+	this.configType = *configType
+	this.configFile = configFile
+	this.active = strings.TrimSpace(*active)
 }

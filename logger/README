@@ -1,0 +1,35 @@
+#使用
+
+#1. 格式化模式(推荐)
+import github.com/gothinc/gothic
+
+gothic.Format(gothic.EntryFields{
+				"log_id": "151a994231wrq1",
+				"type": "redis",
+				"reason": "read timeout",
+		}).Warn()
+#如果不设置使用json(配置文件中设置)， 上面日志格式为
+    [2018-12-28 11:13:15] log_id="151a994231wrq1", type="redis", reason="read timeout"
+#设置使用json， 则格式为json格式,
+    {"time": "2018-12-28 11:13:15", "log_id": "151a994231wrq1", "type": "redis", "reason": "read timeout"}
+
+
+#2. 普通模式
+import github.com/gothinc/gothic
+
+gothic.Warn("log_id", "151a994231wrq1", "type", "redis", "reason", "read timeout")
+#不设置使用json， 上面日志格式为
+    [2018-12-28 15:05:06] log_id,151a994231wrq1,type,redis,reason,read timeout
+#使用json， 格式为
+    {"time":"2018-12-28 15:05:44","msg":["log_id","151a994231wrq1","type","redis","reason","read timeout"]}
+
+
+注： 两种模式都会默认加上时间
+
+#配置参考
+[log]
+root = "/logroot/yourpath"
+prefix = "gothic-"
+suffix = ".log"
+json_format = true
+level = 1 #debug(0), access(1), warn(2), error(3)
