@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"github.com/gothinc/gothic/logger"
 	"github.com/gothinc/gothic/httpclient"
+	"github.com/gothinc/gothic/storage/redis"
 )
 
 //请求体最大字节数
@@ -28,6 +29,9 @@ const (
 
 var Application = NewGothicApplication()
 
+type HttpClientContainer map[string]*httpclient.HttpClient
+type RedisClientContainer map[string]*gothicredis.RedisClient
+
 type GothicApplication struct{
 	basePath string
 	configPath string
@@ -41,6 +45,7 @@ type GothicApplication struct{
 	//用户自定义全局变量
 	definedVariables map[string]interface{}
 
+	//服务容器(如httpclient连接池, redis连接池等)
 	serviceContainer map[string]interface{}
 }
 
@@ -64,14 +69,45 @@ func (this *GothicApplication) Run(){
 	this.startServer()
 }
 
+func (this *GothicApplication) GetHttpClient(name string) *httpclient.HttpClient{
+	container := this.serviceContainer
+	handlers, ok := container["httpclient"]
+	if !ok{
+		return nil
+	}
+
+	clients := handlers.(HttpClientContainer)
+	if client, ok := clients[name]; ok {
+		return client
+	}
+
+	return nil
+}
+
+func (this *GothicApplication) GetRedisClient(name string) *gothicredis.RedisClient{
+	container := this.serviceContainer
+	handlers, ok := container["redisclient"]
+	if !ok{
+		return nil
+	}
+
+	clients := handlers.(RedisClientContainer)
+	if client, ok := clients[name]; ok {
+		return client
+	}
+
+	return nil
+}
+
 func (this *GothicApplication) initService(){
 	this.startHttpClient()
+	this.startRedisClient()
 }
 
 func (this *GothicApplication) startHttpClient(){
 	key := "application.httpclientpool"
 	service := Config.GetStringMap(key)
-	httpClientHandlers := map[string]*httpclient.HttpClient{}
+	httpClientHandlers := HttpClientContainer{}
 
 	for name, _ := range service{
 		if Config.GetBool(key + "." + name + ".disable"){
@@ -95,6 +131,39 @@ func (this *GothicApplication) loadHttpClient(key string) *httpclient.HttpClient
 
 	println("start httpclient " + key + " succ")
 	return httpClient
+}
+
+func (this *GothicApplication) startRedisClient(){
+	key := "application.redisclient"
+	service := Config.GetStringMap(key)
+	redisClientHandlers := RedisClientContainer{}
+
+	for name, _ := range service{
+		if Config.GetBool(key + "." + name + ".disable"){
+			continue
+		}
+
+		client := this.loadRedisClient(key + "." + name)
+		redisClientHandlers[name] = client
+	}
+
+	this.serviceContainer["redisclient"] = redisClientHandlers
+}
+
+func (this *GothicApplication) loadRedisClient(key string) *gothicredis.RedisClient{
+	redisClient := gothicredis.NewRedisClient(&gothicredis.RedisPoolConfig{
+		MaxIdle:      Config.GetInt(key + ".max_idle_conn"),
+		IdleTimeout:  Config.GetInt(key + ".idle_timeout"),
+		Host:       Config.GetString(key + ".host"),
+		Port: 		Config.GetString(key + ".port"),
+		Password:     Config.GetString(key + ".password"),
+		ConnTimeout:  Config.GetInt(key + ".conn_timeout"),
+		ReadTimeout:  Config.GetInt(key + ".read_timeout"),
+		WriteTimeout: Config.GetInt(key + ".write_timeout"),
+	})
+
+	println("start redisclient " + key + " succ")
+	return redisClient
 }
 
 func (this *GothicApplication) AddController(controller interface{}){

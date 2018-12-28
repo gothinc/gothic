@@ -1,0 +1,34 @@
+#获取redisclient:
+    gothic.GetRedisClient(name)  如：gothic.GetRedisClient("5695master")
+
+#使用
+    client := gothic.GetRedisClient("5695master")
+    result, error := redis.Int(client.Do("GET", "test"))
+
+#redis配置
+[application.redisclient]
+    [application.redisclient.5695master]
+    #是否启用
+    disable = 0
+    host = ""
+    port = 5695
+    password = ""
+    max_idle = 50 #master连接池最大空闲连接数
+    idle_timeout = 90 #master连接池最长空闲时间，单位秒
+    conn_timeout = 100
+    read_timeout = 100
+    write_timeout = 100
+
+    [application.redisclient.5695slave]
+    #是否启用
+    disable = 0
+    host = ""
+    port = 5695
+    password = ""
+    max_idle = 50 #master连接池最大空闲连接数
+    idle_timeout = 90 #master连接池最长空闲时间，单位秒
+    conn_timeout = 100
+    read_timeout = 100
+    write_timeout = 100
+
+    [application.redisclient.other]

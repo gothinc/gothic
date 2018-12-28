@@ -3,6 +3,7 @@ package gothic
 import (
 	"github.com/gothinc/gothic/logger"
 	"github.com/gothinc/gothic/httpclient"
+	"github.com/gothinc/gothic/storage/redis"
 )
 
 /**
@@ -59,7 +60,22 @@ func GetHttpClient(name string) *httpclient.HttpClient{
 		return nil
 	}
 
-	clients := handlers.(map[string]*httpclient.HttpClient)
+	clients := handlers.(HttpClientContainer)
+	if client, ok := clients[name]; ok {
+		return client
+	}
+
+	return nil
+}
+
+func GetRedisClient(name string) *gothicredis.RedisClient{
+	container := Application.serviceContainer
+	handlers, ok := container["redisclient"]
+	if !ok{
+		return nil
+	}
+
+	clients := handlers.(RedisClientContainer)
 	if client, ok := clients[name]; ok {
 		return client
 	}
