@@ -2,13 +2,16 @@
 
 #自动生成项目目录结构，以及demo
 #执行以下命令
-1. cd $GOPATH
-2. go get github.com/gothinc/gothic
-3. cd github.com/gothinc/gothic/tools
-4. sh generate.sh -b $GOPATH/yourappname
-5. cd yourappname
-6. ./make
-7. ./serverctl -s start
+1. cd $GOPATH/src
+2. go get -u github.com/kardianos/govendor #下载包管理工具
+3. go get -u github.com/gothinc/gothic #下载框架
+4. cd github.com/gothinc/gothic/tools
+5. sh generate.sh -b $GOPATH/src/yourappname #生成项目目录模板
+6. cd $GOPATH/src/yourappname
+7. govendor init 
+8. govendor fetch +external #下载依赖库(耐心等待)
+9. ./make #编译
+10. ./serverctl -s start #启动项目
 
 访问http://127.0.0.1:9919/demo/getMsg?name=gothic
 
