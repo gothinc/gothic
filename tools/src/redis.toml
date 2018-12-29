@@ -1,0 +1,27 @@
+#redis相关配置
+
+[application.redisclient]
+    [application.redisclient.5695master]
+    #是否禁用
+    disable = true
+    host = ""
+    port = ""
+    password = ""
+    max_idle = 50
+    #连接池最长空闲时间，单位秒
+    idle_timeout = 90 
+    #连接,读,写超时时间, 单位ms
+    conn_timeout = 100
+    read_timeout = 100
+    write_timeout = 100
+
+    [application.redisclient.5695slave]
+    disable = true
+    host = ""
+    port = ""
+    password = ""
+    max_idle = 50
+    idle_timeout = 90 
+    conn_timeout = 100
+    read_timeout = 100
+    write_timeout = 100

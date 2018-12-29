@@ -1,0 +1,7 @@
+#覆盖app.toml中的配置
+[application]
+active = "dev"
+
+[log]
+root = "../logs"
+level = 0

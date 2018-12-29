@@ -16,6 +16,9 @@ var threadContextPool = sync.Pool{}
 func NewThreadContext(request *http.Request, controller, action string) *ThreadContext{
 	threadContext, ok := threadContextPool.Get().(*ThreadContext)
 	if ok{
+		threadContext.Request = request
+		threadContext.Controller = controller
+		threadContext.Action = action
 		return threadContext
 	}
 
@@ -29,11 +32,14 @@ func NewThreadContext(request *http.Request, controller, action string) *ThreadC
 }
 
 func ReleaseThreadContext(context *ThreadContext){
-	context.Request = nil
-	context.Params = make(map[string]interface{})
-	context.Controller = ""
-	context.Action = ""
-	threadContextPool.Put(context)
+	context.Reset()
+}
+
+func (threadContext *ThreadContext) Reset(){
+	threadContext.Request = nil
+	threadContext.Controller = ""
+	threadContext.Action = ""
+	threadContext.Params = make(map[string]interface{})
 }
 
 //协程级别context, 保存单次请求链中的上下文环境
@@ -59,12 +65,4 @@ func (threadContext *ThreadContext) GetParamString(key string) string{
 	}
 
 	return valStr
-}
-
-func (threadContext *ThreadContext) Reset(){
-	threadContext.Application = Application
-	threadContext.Request = nil
-	threadContext.Controller = ""
-	threadContext.Action = ""
-	threadContext.Params = nil
 }

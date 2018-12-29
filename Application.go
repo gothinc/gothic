@@ -28,6 +28,7 @@ const (
 	defaultConfPath = "conf"
 	defaultConfigNamePre = "app"
 	defaultConfigType  = "toml"
+	defaultActiveMode = "prod"
 )
 
 //配置文件类型
@@ -291,7 +292,7 @@ func (this *GothicApplication) parseFlag(){
 	confPath := flag.String("c", defaultConfPath, "optional: config path")
 	configType := flag.String("t", defaultConfigType, "optional: config type, yml|toml")
 	configFile := defaultConfigNamePre + "." + *configType
-	active := flag.String("r", " ", "optional: active mode")
+	active := flag.String("r", defaultActiveMode, "optional: active mode")
 
 	flag.Parse()
 

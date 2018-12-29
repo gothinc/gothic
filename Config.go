@@ -42,7 +42,7 @@ func loadConfig(configPath, configFile, configType, active string){
 	}
 
 	//包含当前环境（线上或开发）的配置
-	if active != "" {
+	if active != "" && active != defaultActiveMode {
 		loadInclude(entity, configPath, defaultConfigNamePre + "." + active + "." + configType)
 	}
 

@@ -1,0 +1,22 @@
+[application]
+#框架相关配置
+name = "gothic"
+server_header = "GothicServer"
+version = 1.0
+pid_file = "./pid"
+
+[log]
+root = "../logs"
+prefix = "gothic-"
+suffix = ".log"
+json_format = true
+level = 1 #debug(0), access(1), warn(2), error(3)
+
+[server]
+http_port = 9919
+http_read_timeout = 2000
+http_write_timeout = 2000
+http_idle_timeout = 60000
+
+[includes]
+files = ["redis.toml", "httpclient.toml"]
