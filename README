@@ -1,6 +1,22 @@
 #Gothic
 
-#使用
+#自动生成项目目录结构，以及demo
+#执行以下命令
+1. cd $GOPATH
+2. go get github.com/gothinc/gothic
+3. cd github.com/gothinc/gothic/tools
+4. sh generate.sh -b $GOPATH/yourappname
+5. cd yourappname
+6. ./make
+7. ./serverctl -s start
+
+访问http://127.0.0.1:9919/demo/getMsg?name=gothic
+
+=============================================================================================
+
+#wiki
+
+#使用框架
 import github.com/gothinc/gothic
 
 gothic.Application.AddController(&controller.YourController{})
@@ -48,6 +64,3 @@ http_port = 9918
 http_read_timeout = 2000  #ms
 http_write_timeout = 2000  #ms
 http_idle_timeout = 60000  #s
-
-#TODO
-1. hook链添加模糊匹配
