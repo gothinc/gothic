@@ -1,0 +1,4 @@
+1. ./make
+2. ./serverctl -s start
+
+访问http://127.0.0.1:9919/demo/getMsg?name=gothic

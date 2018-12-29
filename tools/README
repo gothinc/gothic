@@ -1,0 +1,9 @@
+#生成项目目录结构模板，以及demo
+
+#执行以下命令
+1. sh generate.sh -b /home/project/myapp
+2. cd myapp
+3. ./make
+4. ./serverctl -s start
+
+访问http://127.0.0.1:9919/demo/getMsg?name=gothic

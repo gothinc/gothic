@@ -1,5 +1,3 @@
-# third party api
-
 #http连接池配置
 [application.httpclientpool]
     #通用http连接池
@@ -16,11 +14,8 @@
 
     #某服务独立http连接池(如服务名为alg_engine的配置如下)
     [application.httpclientpool.alg_engine]
-    #是否禁用
     disable = true 
     max_idle_conn = 50
     idle_conn_timeout = 50
-    #读写超时时间,单位ms
     http_timeout = 1500
-    #连接超时时间, 单位ms
     dial_timeout = 1000

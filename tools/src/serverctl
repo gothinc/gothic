@@ -5,28 +5,58 @@ ROOT_DIR=`pwd`
 APP=`basename $ROOT_DIR`
 
 function usage(){
-    echo -e "Usage of serverctl [option] start|stop|restart:" 
-    echo -e "如 ./serverctl -r dev start"
+    echo -e "Usage of serverctl:" 
+    echo -e "如 ./serverctl -r dev -f -s start"
+    echo -e "  -s string"
+    echo -e "         required"
+    echo -e "         start|stop|restart"
     echo -e "  -r string"
     echo -e "         optional"
     echo -e "         项目运行模式, 如test|dev, 默认为prod"
+    echo -e "  -f"
+    echo -e "         optional"
+    echo -e "         是否强制启动，忽略pid文件"
     exit 1
 }
 
-mode="prod"
-while getopts "r:h*" Option
+#运行模式(prod|dev|...)
+mode=""
+
+#是否强制启动,会忽略pid文件的存在, 适合程序异常退出后的重启,或者机器重启的场景
+force_start=false
+
+#start|stop|restart
+cmd=""
+
+while getopts "r:fs:h*" Option
 do
     case $Option in
-        r) mode=$OPTARG
+        r) 
+            mode=$OPTARG
         ;;
-        h) usage
+        f)
+            force_start=true
+        ;;
+        s)
+            cmd=$OPTARG
+        ;;
+        h) 
+            usage
         ;;
     esac
 done
 
+if [ "$mode" == "" ]; then
+    mode="prod"
+fi
+
+if [ "$cmd" != "start" -a "$cmd" != "stop" -a "$cmd" != "restart" ]; then
+    usage
+fi
+
+#程序启动后会将pid写入bin文件统计目录下
 wait_for_pid () {
     try=0
-    #先sleep1秒, 防止启动后马上又出错退出的情况
     sleep 1
     while test $try -lt 15 ; do
         if [ -f "$1" ] ; then
@@ -41,13 +71,12 @@ wait_for_pid () {
     return 1
 }
 
-case "$1" in
+case "$cmd" in
     start)
         echo "starting...."
         if [ -s $ROOT_DIR/bin/pid ]
         then
-            #强制启动，会忽略pid文件的存在， 适合程序异常退出后的重启，或者机器重启的场景
-            if [ "$2" = "-f" ]
+            if [ ${force_start} ]
             then
                 echo "ignore existed pid file"
                 rm -rf $ROOT_DIR/bin/pid
@@ -56,6 +85,7 @@ case "$1" in
                 exit 1
             fi
         fi
+
         export GOGC=200
         nohup $ROOT_DIR/bin/$APP -b $ROOT_DIR -r $mode 1>>$ROOT_DIR/logs/run.log 2>>$ROOT_DIR/logs/run.log &
         wait_for_pid $ROOT_DIR/bin/pid
@@ -94,9 +124,7 @@ case "$1" in
         ;;
 
     *)
-        echo "Usage: $0 {start [-f]|stop|restart}"
-        exit 1
-
+        usage
         ;;
 esac
 

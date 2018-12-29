@@ -6,7 +6,7 @@ function usage(){
     echo -e "Usage of generate.sh"
     echo -e "  -b string"
     echo -e "         required"
-    echo -e "         root path, for example: /home/project/myapp"
+    echo -e "         project path, for example: /home/project/myapp"
     exit 1
 }
 
@@ -59,12 +59,16 @@ for d in $required_dir; do
     mkdir -p $d
 done
 
-cp $transfer_dir/serverctl $transfer_dir/make $transfer_dir/main.go $root_path
+cp $transfer_dir/serverctl $transfer_dir/make $transfer_dir/main.go $transfer_dir/README $root_path
 cp -r $transfer_dir/*.toml $root_path/conf
 cp $transfer_dir/DemoController.go $root_path/src/controller
 cp $transfer_dir/DemoLogic.go $root_path/src/logic
 cp $transfer_dir/Response.go $root_path/src/configure
 
 cd $here
+
+rm -rf $transfer_dir
+
+echo "done"
 
 exit 0
