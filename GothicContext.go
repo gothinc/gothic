@@ -2,6 +2,7 @@ package gothic
 
 import (
 	"sync"
+	"net/http"
 )
 
 /**
@@ -12,7 +13,7 @@ import (
 
 var threadContextPool = sync.Pool{}
 
-func NewThreadContext(controller, action string) *ThreadContext{
+func NewThreadContext(request *http.Request, controller, action string) *ThreadContext{
 	threadContext, ok := threadContextPool.Get().(*ThreadContext)
 	if ok{
 		return threadContext
@@ -20,6 +21,7 @@ func NewThreadContext(controller, action string) *ThreadContext{
 
 	return &ThreadContext{
 		Application: Application,
+		Request: request,
 		Controller: controller,
 		Action: action,
 		Params: make(map[string]interface{}),
@@ -27,6 +29,7 @@ func NewThreadContext(controller, action string) *ThreadContext{
 }
 
 func ReleaseThreadContext(context *ThreadContext){
+	context.Request = nil
 	context.Params = make(map[string]interface{})
 	context.Controller = ""
 	context.Action = ""
@@ -36,6 +39,7 @@ func ReleaseThreadContext(context *ThreadContext){
 //协程级别context, 保存单次请求链中的上下文环境
 type ThreadContext struct{
 	Application *GothicApplication
+	Request     *http.Request
 	Controller 	string
 	Action 		string
 
@@ -59,6 +63,7 @@ func (threadContext *ThreadContext) GetParamString(key string) string{
 
 func (threadContext *ThreadContext) Reset(){
 	threadContext.Application = Application
+	threadContext.Request = nil
 	threadContext.Controller = ""
 	threadContext.Action = ""
 	threadContext.Params = nil

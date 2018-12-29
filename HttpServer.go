@@ -142,7 +142,7 @@ func (this *httpApiHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	threadContext := NewThreadContext(cname, mname)
+	threadContext := NewThreadContext(r, cname, mname)
 	defer ReleaseThreadContext(threadContext)
 	if err := InvokeThreadHook(cname, mname, BeforeInitController, threadContext); err != nil{
 		Logger.Format(EntryFields{"msg": "Hook Exception", "point": BeforeInitController, "url": router, "error": fmt.Sprint(err)}).Error()

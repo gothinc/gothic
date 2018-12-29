@@ -15,6 +15,8 @@ import (
 	"github.com/gothinc/gothic/httpclient"
 	"github.com/gothinc/gothic/storage/redis"
 	"strings"
+	"strconv"
+	"io/ioutil"
 )
 
 //请求体最大字节数
@@ -69,6 +71,14 @@ func NewGothicApplication() *GothicApplication{
 }
 
 func (this *GothicApplication) Run(){
+	defer func() {
+		if err := recover(); err != nil{
+			this.managePid(false)
+			println("application exit")
+			fmt.Println(fmt.Sprintf("error: %s", err))
+		}
+	}()
+
 	os.Chdir(path.Dir(os.Args[0]))
 	this.parseFlag()
 
@@ -78,8 +88,22 @@ func (this *GothicApplication) Run(){
 	//2. 启动相关服务
 	this.initService()
 
-	//3. 启动服务
+	//3. 生成PID
+	this.managePid(true)
+
+	//4. 启动服务
 	this.startServer()
+}
+
+func (this *GothicApplication) managePid(create bool) {
+	pidFile := Config.GetString("application.pid_file")
+	if create {
+		pid := os.Getpid()
+		pidString := strconv.Itoa(pid)
+		ioutil.WriteFile(pidFile, []byte(pidString), 0777)
+	} else {
+		os.Remove(pidFile)
+	}
 }
 
 func (this *GothicApplication) GetHttpClient(name string) *httpclient.HttpClient{
