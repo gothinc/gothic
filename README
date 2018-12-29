@@ -16,32 +16,13 @@
 
 #wiki
 
-#使用框架
+#启动服务
 import github.com/gothinc/gothic
 
 gothic.Application.AddController(&controller.YourController{})
 gothic.Application.Run()
 
-#启动说明
-注：启动前必须先在配置文件目录下生成app.toml主配置文件
-Usage binname:
-  -b string
-        optional: root path (default ".")
-        可选：项目根目录, 默认为bin文件所在目录
-  -c string
-        optional: config path (default "conf")
-        可选：配置文件目录，相对路径，默认为项目根目录下的conf目录
-  -r string
-        optional: active mode (default " ")
-        可选：程序运行模式(开发或测试环境等)
-        如为-r=corp， 则必须先在配置文件目录下生成app.corp.toml配置文件，该配置文件中的配置会新增或覆盖主配置文件中的相关项
-  -t string
-        optional: config type, yml|toml (default "toml")
-        可选：配置文件类型, 目前只支持yml和toml两种, 默认为toml
-例：项目根目录为/usr/local/myapp, 模式为corp, 配置文件目录为conf, 配置文件类型为toml, bin文件名为demo_gothic且所在目录为bin
-    则启动： /usr/local/myapp/bin/demo_gothic -r corp -b /usr/local/myapp -c conf -t toml
-
-其他：
+注：
 1. controller以Controller结尾，如DemoController，行为以Action结尾, 如GetScoreAction
    则url为/demo/getScore
 
