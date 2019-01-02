@@ -63,7 +63,7 @@ cp $transfer_dir/serverctl $transfer_dir/make $transfer_dir/main.go $transfer_di
 cp -r $transfer_dir/*.toml $root_path/conf
 cp $transfer_dir/DemoController.go $root_path/src/controller
 cp $transfer_dir/DemoLogic.go $root_path/src/logic
-cp $transfer_dir/Response.go $root_path/src/configure
+cp $transfer_dir/Response.go $transfer_dir/LogClassify.go $root_path/src/configure
 
 cd $here
 
