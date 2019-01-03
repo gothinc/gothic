@@ -29,6 +29,7 @@ const (
 	defaultConfigNamePre = "app"
 	defaultConfigType  = "toml"
 	defaultActiveMode = "prod"
+	DefaultPidFile = "./pid"
 )
 
 //配置文件类型
@@ -98,6 +99,9 @@ func (this *GothicApplication) Run(){
 
 func (this *GothicApplication) managePid(create bool) {
 	pidFile := Config.GetString("application.pid_file")
+	if pidFile == ""{
+		pidFile = DefaultPidFile
+	}
 	if create {
 		pid := os.Getpid()
 		pidString := strconv.Itoa(pid)
